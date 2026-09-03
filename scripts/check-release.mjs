@@ -5,17 +5,17 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
+import { parseReleaseVersion } from "../src/release/version.mjs";
 
 const COMMIT_PATTERN = /^[0-9a-f]{40}$/;
-const VERSION_PATTERN = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/;
 
 export function checkRelease(options, git = runGit) {
   const root = resolve(options.root || ".");
   const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   const version = packageJson.version;
 
-  if (!VERSION_PATTERN.test(version)) {
-    throw new Error(`package.json version ${JSON.stringify(version)} is not a stable semantic version`);
+  if (!parseReleaseVersion(version)) {
+    throw new Error(`package.json version ${JSON.stringify(version)} is not a canonical X.Y.Z release version`);
   }
   if (packageJson.private !== true) {
     throw new Error("package.json must set private to true because build-infra is not published to npm");

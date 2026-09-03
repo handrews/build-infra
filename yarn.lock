@@ -277,6 +277,7 @@ __metadata:
     markdown-it: "npm:15.0.1"
     markdownlint-cli2: "npm:0.23.2"
     respec: "npm:37.3.5"
+    semver: "npm:7.8.5"
     vitest: "npm:4.1.11"
     yaml: "npm:2.9.0"
     yargs: "npm:18.1.0"
@@ -3289,7 +3290,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semver@npm:^7.3.5, semver@npm:^7.5.3":
+"semver@npm:7.8.5, semver@npm:^7.3.5, semver@npm:^7.5.3":
   version: 7.8.5
   resolution: "semver@npm:7.8.5"
   bin:

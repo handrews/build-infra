@@ -121,11 +121,20 @@ describe("consumer qualification", () => {
     ]);
   });
 
-  test("rejects abbreviated commits and malformed release versions", () => {
+  test("rejects abbreviated commits", () => {
     expect(() => parseOptions(["--candidate=0123456"])).toThrow(/full 40-character/);
+  });
+
+  test.each([
+    "1.2",
+    "1.2.3-rc.1",
+    "1.2.3+build.1",
+    "01.2.3",
+    "9007199254740992.0.0"
+  ])("rejects non-release qualification version %s", (version) => {
     expect(() => parseOptions([
       `--candidate=${candidate}`,
-      "--release-version=1.2"
+      `--release-version=${version}`
     ])).toThrow(/form X.Y.Z/);
   });
 });

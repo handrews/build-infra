@@ -48,6 +48,12 @@ function createConsumerFixture() {
     cpSync(join(packageRoot, path), join(installedPackage, path), { recursive: true });
   }
   cpSync(join(packageRoot, "package.json"), join(installedPackage, "package.json"));
+  mkdirSync(join(installedPackage, "node_modules"));
+  cpSync(
+    join(packageRoot, "node_modules/semver"),
+    join(installedPackage, "node_modules/semver"),
+    { recursive: true }
+  );
 
   writeConsumerFiles(consumer);
   writeToolStubs(consumer, consumerBin);

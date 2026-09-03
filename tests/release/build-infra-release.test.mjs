@@ -25,11 +25,16 @@ describe("build-infra release preflight", () => {
     });
   });
 
-  test("rejects versions that are not stable semantic versions", () => {
-    const root = createPackage({ version: "1.2.3-rc.1", private: true });
+  test.each([
+    "1.2.3-rc.1",
+    "1.2.3+build.1",
+    "01.2.3",
+    "9007199254740992.0.0"
+  ])("rejects non-release version %s", (version) => {
+    const root = createPackage({ version, private: true });
 
     expect(() => checkRelease({ root, commit, ref: "refs/heads/main" }, fakeGit({ head: commit })))
-      .toThrow(/not a stable semantic version/);
+      .toThrow(/not a canonical X.Y.Z release version/);
   });
 
   test("rejects packages that could be published to npm", () => {

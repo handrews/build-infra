@@ -3,6 +3,8 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
 import { describe, expect, test } from "vitest";
+import semver from "semver";
+import { parseReleaseVersion } from "../../src/release/version.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(__dirname, "../..");
@@ -11,7 +13,7 @@ const yarnConfig = readFileSync(join(packageRoot, ".yarnrc.yml"), "utf8");
 
 describe("package manager policy", () => {
   test("uses stable release metadata and cannot be published to npm", () => {
-    expect(packageJson.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(parseReleaseVersion(packageJson.version)).not.toBeNull();
     expect(packageJson.private).toBe(true);
   });
 
@@ -22,7 +24,7 @@ describe("package manager policy", () => {
 
   test("pins the directly tested toolchain dependencies exactly", () => {
     for (const [name, version] of Object.entries(packageJson.dependencies)) {
-      expect(version, `${name} should use an exact version`).toMatch(/^\d+\.\d+\.\d+(?:[-+].+)?$/);
+      expect(semver.valid(version), `${name} should use an exact version`).not.toBeNull();
     }
   });
 
