@@ -1,5 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { basename, dirname } from "node:path";
 import {
   compareVersions,
   currentBranch,
@@ -9,36 +9,42 @@ import {
   listPublishedSpecs,
   loadReleaseConfig,
   parseArgs,
+  publishedSpecVersion,
   replaceVersionAndHistory,
   remoteBranchExists,
   requireCleanWorktree,
   rewriteVersionInFiles
 } from "./common.mjs";
+import { parseReleaseVersion } from "./version.mjs";
 
 export async function startRelease(args = []) {
   const options = parseArgs(args);
   const config = loadReleaseConfig(options.configFile);
   const branch = currentBranch();
-  const match = branch.match(/^v([0-9]+\.[0-9]+)-dev$/);
+  const match = branch.match(/^v(.+)-dev$/);
+  const developmentVersion = match ? parseReleaseVersion(`${match[1]}.0`) : null;
 
-  if (!match) {
+  if (!developmentVersion) {
     throw new Error("This command is intended to be run from a development branch, e.g. v3.2-dev");
   }
 
   requireCleanWorktree();
 
-  const minor = match[1];
+  const minor = `${developmentVersion.major}.${developmentVersion.minor}`;
   const remote = findRemote(config);
   const mainRef = `${remote}/${config.mainBranch}`;
   const publishedSpecs = listPublishedSpecs(mainRef, config.versionsDir).sort(compareVersions);
-  const sameMinor = publishedSpecs.filter((path) => path.match(new RegExp(`/${minor}\\.[0-9]+\\.md$`)));
+  const sameMinor = publishedSpecs.filter((path) => {
+    const version = publishedSpecVersion(path);
+    return version.major === developmentVersion.major && version.minor === developmentVersion.minor;
+  });
 
   let lastSpec;
   let nextPatch;
   let releaseType;
   if (sameMinor.length > 0) {
     lastSpec = sameMinor.at(-1);
-    nextPatch = Number(lastSpec.match(/\.([0-9]+)\.md$/)[1]) + 1;
+    nextPatch = publishedSpecVersion(lastSpec).patch + 1;
     releaseType = "Patch release";
   } else {
     lastSpec = publishedSpecs.at(-1);
@@ -50,7 +56,7 @@ export async function startRelease(args = []) {
     throw new Error(`Could not find any published specification version in ${mainRef}:${config.versionsDir}`);
   }
 
-  const lastVersion = lastSpec.match(/([0-9]+\.[0-9]+\.[0-9]+)\.md$/)[1];
+  const lastVersion = basename(lastSpec, ".md");
   const nextVersion = `${minor}.${nextPatch}`;
   const prBranch = `${branch}-start-${nextVersion}`;
   const orphan = `v${minor}-orphan`;
@@ -82,7 +88,8 @@ export async function startRelease(args = []) {
     console.log(`=== Initialized ${config.sourcePath}`);
 
     if (nextPatch === 0 && config.schemaVersionRewrite.enabled) {
-      const lastMinor = lastVersion.split(".").slice(0, 2).join(".");
+      const parsedLastVersion = publishedSpecVersion(lastSpec);
+      const lastMinor = `${parsedLastVersion.major}.${parsedLastVersion.minor}`;
       const paths = expandFiles(config.schemaVersionRewrite.paths || []);
       if (paths.length > 0) {
         console.log(`=== Adjust schema-related files for new version ${minor}`);

@@ -4,6 +4,8 @@ import { readdirSync } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
 import { tmpdir } from "node:os";
 import { mkdtempSync } from "node:fs";
+import semver from "semver";
+import { parseReleaseVersion } from "./version.mjs";
 
 export function git(args, options = {}) {
   const output = execFileSync("git", args, {
@@ -132,22 +134,28 @@ export function listPublishedSpecs(ref, versionsDir) {
   try {
     return git(["ls-tree", "-r", "--name-only", ref, versionsDir])
       .split("\n")
-      .filter((name) => new RegExp(`^${escapeRegExp(versionsDir)}/[0-9]+\\.[0-9]+\\.[0-9]+\\.md$`).test(name));
+      .filter((name) => dirname(name) === versionsDir && publishedSpecVersion(name));
   } catch {
     return [];
   }
 }
 
-export function compareVersions(a, b) {
-  const aa = basename(a, ".md").split(".").map(Number);
-  const bb = basename(b, ".md").split(".").map(Number);
-  for (let i = 0; i < Math.max(aa.length, bb.length); i += 1) {
-    const diff = (aa[i] || 0) - (bb[i] || 0);
-    if (diff !== 0) {
-      return diff;
-    }
+export function publishedSpecVersion(path) {
+  if (!path.endsWith(".md")) {
+    return null;
   }
-  return 0;
+
+  return parseReleaseVersion(basename(path, ".md"));
+}
+
+export function compareVersions(a, b) {
+  const aa = publishedSpecVersion(a);
+  const bb = publishedSpecVersion(b);
+  if (!aa || !bb) {
+    throw new Error(`Cannot compare invalid published specification versions: ${a}, ${b}`);
+  }
+
+  return semver.compare(aa, bb);
 }
 
 export function renderHistoryNote(template, values) {
@@ -158,10 +166,15 @@ export function renderHistoryNote(template, values) {
 }
 
 export function replaceVersionAndHistory(source, lastVersion, nextVersion, releaseType, config) {
+  const parsedNextVersion = parseReleaseVersion(nextVersion);
+  if (!parsedNextVersion) {
+    throw new Error(`Invalid release version: ${nextVersion}`);
+  }
+
   const historyLine = `| ${nextVersion} | TBD | ${renderHistoryNote(config.releaseHistoryNote, {
     version: nextVersion,
     releaseType,
-    minor: nextVersion.split(".").slice(0, 2).join(".")
+    minor: `${parsedNextVersion.major}.${parsedNextVersion.minor}`
   })} |\n`;
 
   let result = source.replace(`\n## Version ${lastVersion}\n`, `\n## Version ${nextVersion}\n`);

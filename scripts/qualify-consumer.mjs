@@ -5,10 +5,10 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
+import { parseReleaseVersion } from "../src/release/version.mjs";
 
 const BUILD_INFRA_URL = "git+https://github.com/OAI/build-infra.git";
 const COMMIT_PATTERN = /^[0-9a-f]{40}$/;
-const VERSION_PATTERN = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 
 export function parseOptions(args) {
   const { values } = parseArgs({
@@ -27,7 +27,7 @@ export function parseOptions(args) {
   }
 
   const releaseVersion = values["release-version"] || null;
-  if (releaseVersion && !VERSION_PATTERN.test(releaseVersion)) {
+  if (releaseVersion && !parseReleaseVersion(releaseVersion)) {
     throw new Error("--release-version must have the form X.Y.Z");
   }
 
