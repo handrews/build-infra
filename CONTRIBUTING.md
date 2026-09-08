@@ -116,20 +116,24 @@ projects whose lockfile and commands use Yarn.
 When Dependabot opens a pull request:
 
 1. Read the release notes for major updates and security updates.
-2. Run `yarn install --immutable` and `yarn test`.
-3. If the update touches build, markdown, schema, or test behavior, test a
+2. Review Yarn's peer-dependency warnings. A major update may make a formerly
+   transitive package a required peer dependency; declare that package directly
+   and add it to the same Dependabot group when its version must stay compatible
+   with the updated tool.
+3. Run `yarn install --immutable` and `yarn test`.
+4. If the update touches build, markdown, schema, or test behavior, test a
    consumer repository with the local `file:../build-infra` dependency.
-4. Merge the build-infra update.
-5. Run the **Qualify build-infra candidate** workflow for the merged commit.
-6. In each consumer repository that should pick up the change, run:
+5. Merge the build-infra update.
+6. Run the **Qualify build-infra candidate** workflow for the merged commit.
+7. In each consumer repository that should pick up the change, run:
 
    ```sh
    yarn up -R @oai/build-infra
    yarn install --immutable
    ```
 
-7. Run the consumer's relevant tests, validation, and builds.
-8. Commit the consumer repository's `yarn.lock` update.
+8. Run the consumer's relevant tests, validation, and builds.
+9. Commit the consumer repository's `yarn.lock` update.
 
 The consumer `package.json` should keep requesting
 `git+https://github.com/OAI/build-infra.git#main`. The consumer
