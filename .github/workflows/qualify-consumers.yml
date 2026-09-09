@@ -74,6 +74,10 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
+      - name: Install build-infra runner dependencies
+        working-directory: build-infra
+        run: yarn install --immutable --mode=skip-build
+
       - name: Qualify candidate
         env:
           BUILD_INFRA_COMMIT: ${{ inputs.build_infra_commit || github.sha }}

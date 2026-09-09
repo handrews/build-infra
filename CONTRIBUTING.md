@@ -77,7 +77,11 @@ The workflow uses `scripts/qualify-consumer.mjs`. You may run it locally against
 a disposable clone, but never against a checkout with work you need to keep: it
 rewrites the dependency and lockfile, and release qualification also commits the
 temporary update and creates a release branch. See the README for its arguments
-and current consumer matrix.
+and current consumer matrix. The workflow installs the candidate's dependencies
+before invoking this script because the runner uses package dependencies such as
+`semver`. It uses Yarn's `skip-build` mode for this bootstrap install because the
+runner does not need Puppeteer's browser; each consumer performs its own normal
+install during qualification.
 
 For changes that affect behavior not covered by those fixtures, also test in at
 least one specification repository with a temporary local dependency:
